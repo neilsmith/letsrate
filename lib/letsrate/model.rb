@@ -20,7 +20,7 @@ module Letsrate
     if average(dimension).nil?
       RatingCache.create! do |avg|
         avg.cacheable_id = self.id
-        avg.cacheable_type = self.class.name
+        avg.cacheable_type = lets_rate_name
         avg.avg = stars
         avg.qty = 1
         avg.dimension = dimension
@@ -29,7 +29,7 @@ module Letsrate
       a = average(dimension)
       a.qty = rates(dimension).count
       a.avg = rates(dimension).average(:stars)
-      a.save!(validate: false)
+      a.save!(:validate => false)
     end
   end
 
@@ -38,7 +38,7 @@ module Letsrate
   end
 
   def can_rate?(user, dimension=nil)
-    user.ratings_given.where(dimension: dimension, rateable_id: id, rateable_type: self.class.name).size.zero?
+    user.ratings_given.where(:dimension => dimension, :rateable_id => id, :rateable_type => lets_rate_name).size.zero?
   end
 
   def rates(dimension=nil)
@@ -47,6 +47,14 @@ module Letsrate
 
   def raters(dimension=nil)
     dimension ? self.send("#{dimension}_raters") : raters_without_dimension
+  end
+
+  def lets_rate_name
+    if self.class.superclass != ActiveRecord::Base
+      self.class.superclass.name.to_s
+    else
+      self.class.name.to_s
+    end
   end
 
   module ClassMethods
